@@ -1,6 +1,7 @@
-# Ready, uncomment 2 post requests to populate directus
+# Ready, uncomment 4 post requests to populate directus
 
 import os
+from typing import Any
 
 import pandas as pd
 import requests
@@ -127,7 +128,7 @@ df_mobile["container_id"] = [f"container_{i:06d}" for i in range(1, len(df_mobil
 
 
 # Add some columns with content depending on the container type
-def assign_values(row: pd.Series) -> pd.Series:
+def assign_values_mobile(row: pd.Series) -> pd.Series:
     if row["old_id"].startswith("container_8x3_"):
         return pd.Series(
             {
@@ -159,7 +160,7 @@ def assign_values(row: pd.Series) -> pd.Series:
 # Apply the function to each row
 df_mobile[
     ["container_model", "status", "used", "is_finite", "columns", "columns_numeric", "rows", "rows_numeric"]
-] = df_mobile.apply(assign_values, axis=1)
+] = df_mobile.apply(assign_values_mobile, axis=1)
 
 # Add data to new directus instance
 # Define the Directus base URL
@@ -183,6 +184,204 @@ if response.status_code == 200:
     headers = {"Content-Type": "application/json"}
 
     records = df_mobile.to_json(orient="records")
+
+    # Add the codes to the database
+    session.headers.update({"Authorization": f"Bearer {access_token}"})
+    # response = session.post(url=directus_collection, headers=headers, data=records)
+    if response.status_code == 200:
+        print("data correctly entered")
+    else:
+        print(response.status_code)
+        print(response.text)
+
+# If connection to directus failed
+else:
+    print("connection error")
+
+
+# _________________________________________________________Lab Extracts part______________________________________________________________
+
+# Create a session object for making requests
+session = requests.Session()
+
+# Collect data from old directus instance
+directus_instance = "https://emi-collection.unifr.ch/directus"
+directus_collection = f"{directus_instance}/items/Lab_Extracts/?limit=-1"
+response = session.get(url=directus_collection)
+
+# Extract data
+data = response.json()["data"]
+
+# Convert data to a dataframe
+df_extract = pd.DataFrame(data)
+
+# Delete useless columns
+df_extract.drop(
+    [
+        "user_created",
+        "date_created",
+        "user_updated",
+        "date_updated",
+        "UUID_lab_extract",
+        "field_sample_id",
+        "dried_plant_weight",
+        "extraction_method",
+        "status",
+        "batch_id",
+        "solvent_volume_micro",
+        "mobile_container_id",
+        "dried_weight",
+        "solvent_volume",
+        "dried_weight_unit",
+        "solvent_volume_unit",
+    ],
+    axis=1,
+    inplace=True,
+)
+
+
+# Add some columns with content depending on the container type
+def assign_values_ext(row: pd.Series) -> Any:
+    if row["lab_extract_id"].startswith("dbgi_batch_blk_"):
+        return row["lab_extract_id"].replace("dbgi_batch_", "")
+    else:
+        return row["lab_extract_id"]
+
+
+# Apply the function to each row
+df_extract["container_id"] = df_extract.apply(assign_values_ext, axis=1)
+
+# Delete old id column
+df_extract.drop("lab_extract_id", axis=1, inplace=True)
+
+# Add the columns with good values for lab extracts
+df_extract["container_model"] = 5
+df_extract["used"] = True
+df_extract["is_finite"] = True
+df_extract["columns"] = 1
+df_extract["columns_numeric"] = True
+df_extract["rows"] = 1
+df_extract["rows_numeric"] = True
+
+# Add data to new directus instance
+# Define the Directus base URL
+base_url = "https://emi-collection.unifr.ch/directus-test"
+
+# Define the login endpoint URL
+login_url = base_url + "/auth/login"
+# Create a session object for making requests
+session = requests.Session()
+# Send a POST request to the login endpoint
+response = session.post(login_url, json={"email": DIRECTUS_EMAIL, "password": DIRECTUS_PASSWORD})
+# Test if connection is successful
+if response.status_code == 200:
+    # Stores the access token
+    data = response.json()["data"]
+    access_token = data["access_token"]
+    print("connection established")
+
+    directus_instance = "https://emi-collection.unifr.ch/directus-test"
+    directus_collection = f"{directus_instance}/items/Containers/"
+    headers = {"Content-Type": "application/json"}
+
+    records = df_extract.to_json(orient="records")
+
+    # Add the codes to the database
+    session.headers.update({"Authorization": f"Bearer {access_token}"})
+    # response = session.post(url=directus_collection, headers=headers, data=records)
+    if response.status_code == 200:
+        print("data correctly entered")
+    else:
+        print(response.status_code)
+        print(response.text)
+
+# If connection to directus failed
+else:
+    print("connection error")
+
+
+# _________________________________________________________Aliquots part______________________________________________________________
+
+# Create a session object for making requests
+session = requests.Session()
+
+# Collect data from old directus instance
+directus_instance = "https://emi-collection.unifr.ch/directus"
+directus_collection = f"{directus_instance}/items/Aliquots/?limit=-1"
+response = session.get(url=directus_collection)
+
+# Extract data
+data = response.json()["data"]
+
+# Convert data to a dataframe
+df_aliquot = pd.DataFrame(data)
+
+# Delete useless columns
+df_aliquot.drop(
+    [
+        "user_created",
+        "date_created",
+        "user_updated",
+        "date_updated",
+        "UUID_aliquot",
+        "lab_extract_id",
+        "status",
+        "aliquot_volume_microliter",
+        "mobile_container_id",
+    ],
+    axis=1,
+    inplace=True,
+)
+
+print(df_aliquot)
+print(df_aliquot.columns)
+
+
+# Add some columns with content depending on the container type
+def assign_values(row: pd.Series) -> Any:
+    if row["aliquot_id"].startswith("dbgi_batch_blk_"):
+        return row["aliquot_id"].replace("dbgi_batch_", "")
+    else:
+        return row["aliquot_id"]
+
+
+# Apply the function to each row
+df_aliquot["container_id"] = df_aliquot.apply(assign_values, axis=1)
+
+# Delete old id column
+df_aliquot.drop("aliquot_id", axis=1, inplace=True)
+
+# Add the columns with good values for lab extracts
+df_aliquot["container_model"] = 5
+df_aliquot["used"] = True
+df_aliquot["is_finite"] = True
+df_aliquot["columns"] = 1
+df_aliquot["columns_numeric"] = True
+df_aliquot["rows"] = 1
+df_aliquot["rows_numeric"] = True
+
+# Add data to new directus instance
+# Define the Directus base URL
+base_url = "https://emi-collection.unifr.ch/directus-test"
+
+# Define the login endpoint URL
+login_url = base_url + "/auth/login"
+# Create a session object for making requests
+session = requests.Session()
+# Send a POST request to the login endpoint
+response = session.post(login_url, json={"email": DIRECTUS_EMAIL, "password": DIRECTUS_PASSWORD})
+# Test if connection is successful
+if response.status_code == 200:
+    # Stores the access token
+    data = response.json()["data"]
+    access_token = data["access_token"]
+    print("connection established")
+
+    directus_instance = "https://emi-collection.unifr.ch/directus-test"
+    directus_collection = f"{directus_instance}/items/Containers/"
+    headers = {"Content-Type": "application/json"}
+
+    records = df_aliquot.to_json(orient="records")
 
     # Add the codes to the database
     session.headers.update({"Authorization": f"Bearer {access_token}"})
