@@ -1,4 +1,4 @@
-# Ready
+# Ready, uncomment 2 post requests to populate directus
 
 import os
 
@@ -60,7 +60,7 @@ login_url = base_url + "/auth/login"
 # Create a session object for making requests
 session = requests.Session()
 # Send a POST request to the login endpoint
-response = session.post(login_url, json={"email": "", "password": ""})
+response = session.post(login_url, json={"email": DIRECTUS_EMAIL, "password": DIRECTUS_PASSWORD})
 # Test if connection is successful
 if response.status_code == 200:
     # Stores the access token
@@ -76,7 +76,7 @@ if response.status_code == 200:
 
     # Add the codes to the database
     session.headers.update({"Authorization": f"Bearer {access_token}"})
-    #     response = session.post(url=directus_collection, headers=headers, data=records)
+    # response = session.post(url=directus_collection, headers=headers, data=records)
     if response.status_code == 200:
         print("data correctly entered")
     else:
@@ -170,7 +170,7 @@ login_url = base_url + "/auth/login"
 # Create a session object for making requests
 session = requests.Session()
 # Send a POST request to the login endpoint
-response = session.post(login_url, json={"email": "", "password": ""})
+response = session.post(login_url, json={"email": DIRECTUS_EMAIL, "password": DIRECTUS_PASSWORD})
 # Test if connection is successful
 if response.status_code == 200:
     # Stores the access token
@@ -186,7 +186,7 @@ if response.status_code == 200:
 
     # Add the codes to the database
     session.headers.update({"Authorization": f"Bearer {access_token}"})
-    response = session.post(url=directus_collection, headers=headers, data=records)
+    # response = session.post(url=directus_collection, headers=headers, data=records)
     if response.status_code == 200:
         print("data correctly entered")
     else:
